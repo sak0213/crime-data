@@ -1,0 +1,27 @@
+I got kind of lazy and cleaned the main LW data in excel power editor.
+2 parents and one child is tyhe most common family composition in the US< so i removed all columns aside from this one.
+there asre three rows to every FIPS code in the dataset, so i pivoted them to be columns for each FIPS
+Here's the power editor code:
+
+let
+    Source = Csv.Document(File.Contents("C:\Users\steve\Desktop\Steve's Projects\Steve-LivingWage-Attempt\crime-data\Resources\Source_Data\df_living_wage.csv"),[Delimiter=":", Columns=2, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Changed Type", "Column1", Splitter.SplitTextByDelimiter(",", QuoteStyle.Csv), {"Column1.1", "Column1.2", "Column1.3", "Column1.4", "Column1.5", "Column1.6", "Column1.7", "Column1.8", "Column1.9", "Column1.10", "Column1.11", "Column1.12", "Column1.13", "Column1.14", "Column1.15", "Column1.16", "Column1.17"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"Column1.1", Int64.Type}, {"Column1.2", type text}, {"Column1.3", type text}, {"Column1.4", type text}, {"Column1.5", type text}, {"Column1.6", type text}, {"Column1.7", type text}, {"Column1.8", type text}, {"Column1.9", type text}, {"Column1.10", type text}, {"Column1.11", type text}, {"Column1.12", type text}, {"Column1.13", type text}, {"Column1.14", type text}, {"Column1.15", type text}, {"Column1.16", type text}, {"Column1.17", type text}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type1",{"Column1.1", "Column1.17"}),
+    #"Split Column by Delimiter1" = Table.SplitColumn(#"Removed Columns", "Column2", Splitter.SplitTextByEachDelimiter({","}, QuoteStyle.Csv, true), {"Column2.1", "Column2.2"}),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Split Column by Delimiter1",{{"Column2.1", type text}, {"Column2.2", type text}}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type2", [PromoteAllScalars=true]),
+    #"Changed Type3" = Table.TransformColumnTypes(#"Promoted Headers",{{"1 ADULT", type text}, {"1 ADULT_1", type text}, {"1 ADULT_2", type text}, {"1 ADULT_3", type text}, {"2 ADULTS(1 WORKING)", type text}, {"2 ADULTS(1 WORKING)_4", type text}, {"2 ADULTS(1 WORKING)_5", type text}, {"2 ADULTS(1 WORKING)_6", type text}, {"2 ADULTS(BOTH WORKING)", type text}, {"2 ADULTS(BOTH WORKING)_7", type text}, {"2 ADULTS(BOTH WORKING)_8", type text}, {"2 ADULTS(BOTH WORKING)_9", type text}, {"County", type text}, {"State", type text}, {"URL", type text}, {" 0_level_0", type text}, {"Column17", type text}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Changed Type3",{"1 ADULT", "1 ADULT_1", "1 ADULT_2", "1 ADULT_3", "2 ADULTS(1 WORKING)", "2 ADULTS(1 WORKING)_5", "2 ADULTS(1 WORKING)_6", "2 ADULTS(BOTH WORKING)", "2 ADULTS(BOTH WORKING)_7", "2 ADULTS(BOTH WORKING)_8", "2 ADULTS(BOTH WORKING)_9"}),
+    #"Removed Top Rows" = Table.Skip(#"Removed Columns1",1),
+    #"Split Column by Delimiter2" = Table.SplitColumn(#"Removed Top Rows", " 0_level_0", Splitter.SplitTextByEachDelimiter({"/"}, QuoteStyle.Csv, true), {" 0_level_0.1", " 0_level_0.2"}),
+    #"Changed Type4" = Table.TransformColumnTypes(#"Split Column by Delimiter2",{{" 0_level_0.1", type text}, {" 0_level_0.2", Int64.Type}}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Changed Type4",{" 0_level_0.1", "URL"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Removed Columns2",{{" 0_level_0.2", "Fips Code"}}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Renamed Columns",{"County", "State"}),
+    #"Pivoted Column" = Table.Pivot(#"Removed Columns3", List.Distinct(#"Removed Columns3"[Column17]), "Column17", "2 ADULTS(1 WORKING)_4"),
+    #"Replaced Value" = Table.ReplaceValue(#"Pivoted Column","$","",Replacer.ReplaceText,{"Living Wage", "Poverty Wage", "Minimum Wage"}),
+    #"Changed Type5" = Table.TransformColumnTypes(#"Replaced Value",{{"Minimum Wage", type number}, {"Poverty Wage", type number}, {"Living Wage", type number}, {"Fips Code", Int64.Type}})
+in
+    #"Changed Type5"
